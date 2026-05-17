@@ -1,0 +1,20 @@
+name: Upload IPA to App Store Connect
+
+on:
+  workflow_dispatch:
+
+jobs:
+  upload:
+    runs-on: macos-latest
+
+    steps:
+      - name: Download IPA
+        run: |
+          curl -L "https://www.dropbox.com/scl/fi/249gk7fbffdf0vw3jblzu/ios-2.121943.1.ipa?rlkey=h28msyz3o1uy7gc7205bfvfqr&dl=1" -o app.ipa
+
+      - name: Upload to App Store Connect
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+        run: |
+          xcrun altool --upload-app -f app.ipa -t ios -u "$APPLE_ID" -p "$APP_PASSWORD"
