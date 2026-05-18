@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Download IPA
         run: |
-          curl -L "https://www.dropbox.com/scl/fi/249gk7fbffdf0vw3jblzu/ios-2.121943.1.ipa?rlkey=h28msyz3o1uy7gc7205bfvfqr&dl=1" -o app.ipa
+          curl -L "https://www.dropbox.com/scl/fi/394u9lnbt3g5w3ls6fwgg/ios-2.121943.3.ipa?rlkey=blxosy5cdar55417ks2dmivgu&dl=1" -o app.ipa
 
       - name: Upload to App Store Connect
         env:
