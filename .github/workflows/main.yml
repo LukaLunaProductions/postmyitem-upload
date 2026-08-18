@@ -2,6 +2,11 @@ name: Upload IPA to App Store Connect
 
 on:
   workflow_dispatch:
+    inputs:
+      ipa_url:
+        description: "Directe downloadlink naar de SpotCast IPA"
+        required: true
+        type: string
 
 jobs:
   upload:
@@ -9,12 +14,15 @@ jobs:
 
     steps:
       - name: Download IPA
+        env:
+          IPA_URL: ${{ inputs.ipa_url }}
         run: |
-          curl -L "https://www.dropbox.com/scl/fi/0jgy9oeuki6sl8pwpda9c/ios-2.121943.5.ipa?rlkey=p098l8gelq6s9xnzw6q5eof2j&dl=1" -o app.ipa
+          curl --fail --location "$IPA_URL" --output SpotCast.ipa
+          test -s SpotCast.ipa
 
       - name: Upload to App Store Connect
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
         run: |
-          xcrun altool --upload-app -f app.ipa -t ios -u "$APPLE_ID" -p "$APP_PASSWORD"
+          xcrun altool --upload-app -f SpotCast.ipa -t ios -u "$APPLE_ID" -p "$APP_PASSWORD"
