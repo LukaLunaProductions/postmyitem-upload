@@ -1,1 +1,1 @@
-Project HQ IPA upload triggered on 2026-08-21 Europe/Brussels, Base44 rebuild.
+Project HQ IPA upload retriggered after App Store Connect app record creation, 2026-08-21 Europe/Brussels.
