@@ -1,28 +1,39 @@
-name: Upload IPA to App Store Connect
+name: Upload PostMyItem IPA to App Store Connect
 
 on:
   workflow_dispatch:
     inputs:
       ipa_url:
-        description: "Directe downloadlink naar de SpotCast IPA"
+        description: "Directe downloadlink naar de nieuwe PostMyItem IPA"
         required: true
         type: string
 
 jobs:
   upload:
     runs-on: macos-latest
+    timeout-minutes: 30
 
     steps:
-      - name: Download IPA
+      - name: Download PostMyItem IPA
         env:
           IPA_URL: ${{ inputs.ipa_url }}
         run: |
-          curl --fail --location "$IPA_URL" --output SpotCast.ipa
-          test -s SpotCast.ipa
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-delay 2 "$IPA_URL" --output PostMyItem.ipa
+          test -s PostMyItem.ipa
+          file PostMyItem.ipa
+          echo "IPA size: $(du -h PostMyItem.ipa | cut -f1)"
+
+      - name: Validate IPA archive
+        run: |
+          set -euo pipefail
+          unzip -t PostMyItem.ipa >/dev/null
+          echo "IPA archive is valid."
 
       - name: Upload to App Store Connect
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
         run: |
-          xcrun altool --upload-app -f SpotCast.ipa -t ios -u "$APPLE_ID" -p "$APP_PASSWORD"
+          set -euo pipefail
+          xcrun altool --upload-app -f PostMyItem.ipa -t ios -u "$APPLE_ID" -p "$APP_PASSWORD"
