@@ -1,12 +1,18 @@
-name: Upload PostMyItem IPA to App Store Connect
+name: Upload Project HQ IPA to App Store Connect
 
 on:
   workflow_dispatch:
     inputs:
       ipa_url:
-        description: "Directe downloadlink naar de nieuwe PostMyItem IPA"
-        required: true
+        description: "Directe downloadlink naar de Project HQ IPA"
+        required: false
+        default: "https://www.dropbox.com/scl/fi/tkb1ae3lup4r9675brvd4/ios-2.121943.3-1.ipa?rlkey=xhg6tf5s5v7waib5100nr26o9&dl=1"
         type: string
+  push:
+    branches:
+      - main
+    paths:
+      - upload-trigger.txt
 
 jobs:
   upload:
@@ -14,20 +20,22 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Download PostMyItem IPA
+      - name: Download Project HQ IPA
         env:
-          IPA_URL: ${{ inputs.ipa_url }}
+          DISPATCH_URL: ${{ inputs.ipa_url }}
+          DEFAULT_IPA_URL: "https://www.dropbox.com/scl/fi/tkb1ae3lup4r9675brvd4/ios-2.121943.3-1.ipa?rlkey=xhg6tf5s5v7waib5100nr26o9&dl=1"
         run: |
           set -euo pipefail
-          curl --fail --location --retry 3 --retry-delay 2 "$IPA_URL" --output PostMyItem.ipa
-          test -s PostMyItem.ipa
-          file PostMyItem.ipa
-          echo "IPA size: $(du -h PostMyItem.ipa | cut -f1)"
+          IPA_URL="${DISPATCH_URL:-$DEFAULT_IPA_URL}"
+          curl --fail --location --retry 3 --retry-delay 2 "$IPA_URL" --output ProjectHQ.ipa
+          test -s ProjectHQ.ipa
+          file ProjectHQ.ipa
+          echo "IPA size: $(du -h ProjectHQ.ipa | cut -f1)"
 
       - name: Validate IPA archive
         run: |
           set -euo pipefail
-          unzip -t PostMyItem.ipa >/dev/null
+          unzip -t ProjectHQ.ipa >/dev/null
           echo "IPA archive is valid."
 
       - name: Upload to App Store Connect
@@ -36,4 +44,4 @@ jobs:
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
         run: |
           set -euo pipefail
-          xcrun altool --upload-app -f PostMyItem.ipa -t ios -u "$APPLE_ID" -p "$APP_PASSWORD"
+          xcrun altool --upload-app -f ProjectHQ.ipa -t ios -u "$APPLE_ID" -p "$APP_PASSWORD"
