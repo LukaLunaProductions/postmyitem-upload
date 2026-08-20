@@ -6,7 +6,7 @@ on:
       ipa_url:
         description: "Directe downloadlink naar de Project HQ IPA"
         required: false
-        default: "https://www.dropbox.com/scl/fi/tkb1ae3lup4r9675brvd4/ios-2.121943.3-1.ipa?rlkey=xhg6tf5s5v7waib5100nr26o9&dl=1"
+        default: "https://www.dropbox.com/scl/fi/73r38okbp4aui76b5a1h2/ios-2.131675.2.ipa?rlkey=trxma57fn2g8hkv441h84qxfd&st=vp6urpus&dl=1"
         type: string
   push:
     branches:
@@ -23,7 +23,7 @@ jobs:
       - name: Download Project HQ IPA
         env:
           DISPATCH_URL: ${{ inputs.ipa_url }}
-          DEFAULT_IPA_URL: "https://www.dropbox.com/scl/fi/tkb1ae3lup4r9675brvd4/ios-2.121943.3-1.ipa?rlkey=xhg6tf5s5v7waib5100nr26o9&dl=1"
+          DEFAULT_IPA_URL: "https://www.dropbox.com/scl/fi/73r38okbp4aui76b5a1h2/ios-2.131675.2.ipa?rlkey=trxma57fn2g8hkv441h84qxfd&st=vp6urpus&dl=1"
         run: |
           set -euo pipefail
           IPA_URL="${DISPATCH_URL:-$DEFAULT_IPA_URL}"
