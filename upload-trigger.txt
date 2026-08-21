@@ -1,1 +1,1 @@
-Project HQ IPA upload retriggered after App Store Connect app record creation, 2026-08-21 Europe/Brussels.
+PhotoShape IPA upload triggered 2026-08-21 10:56 Europe/Brussels.
