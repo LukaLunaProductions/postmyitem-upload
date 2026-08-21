@@ -1,12 +1,12 @@
-name: Upload Project HQ IPA to App Store Connect
+name: Upload PhotoShape IPA to App Store Connect
 
 on:
   workflow_dispatch:
     inputs:
       ipa_url:
-        description: "Directe downloadlink naar de Project HQ IPA"
+        description: "Directe downloadlink naar de PhotoShape IPA"
         required: false
-        default: "https://www.dropbox.com/scl/fi/73r38okbp4aui76b5a1h2/ios-2.131675.2.ipa?rlkey=trxma57fn2g8hkv441h84qxfd&st=vp6urpus&dl=1"
+        default: "https://www.dropbox.com/scl/fi/x6h5m8amc4yhb5nja2f84/ios-2.131675.1-3.ipa?rlkey=ds03nb0s6zgwvnr3ucy4xrpx1&st=jtedj6vg&dl=1"
         type: string
   push:
     branches:
@@ -20,22 +20,22 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Download Project HQ IPA
+      - name: Download PhotoShape IPA
         env:
           DISPATCH_URL: ${{ inputs.ipa_url }}
-          DEFAULT_IPA_URL: "https://www.dropbox.com/scl/fi/73r38okbp4aui76b5a1h2/ios-2.131675.2.ipa?rlkey=trxma57fn2g8hkv441h84qxfd&st=vp6urpus&dl=1"
+          DEFAULT_IPA_URL: "https://www.dropbox.com/scl/fi/x6h5m8amc4yhb5nja2f84/ios-2.131675.1-3.ipa?rlkey=ds03nb0s6zgwvnr3ucy4xrpx1&st=jtedj6vg&dl=1"
         run: |
           set -euo pipefail
           IPA_URL="${DISPATCH_URL:-$DEFAULT_IPA_URL}"
-          curl --fail --location --retry 3 --retry-delay 2 "$IPA_URL" --output ProjectHQ.ipa
-          test -s ProjectHQ.ipa
-          file ProjectHQ.ipa
-          echo "IPA size: $(du -h ProjectHQ.ipa | cut -f1)"
+          curl --fail --location --retry 3 --retry-delay 2 "$IPA_URL" --output PhotoShape.ipa
+          test -s PhotoShape.ipa
+          file PhotoShape.ipa
+          echo "IPA size: $(du -h PhotoShape.ipa | cut -f1)"
 
       - name: Validate IPA archive
         run: |
           set -euo pipefail
-          unzip -t ProjectHQ.ipa >/dev/null
+          unzip -t PhotoShape.ipa >/dev/null
           echo "IPA archive is valid."
 
       - name: Upload to App Store Connect
@@ -44,4 +44,4 @@ jobs:
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
         run: |
           set -euo pipefail
-          xcrun altool --upload-app -f ProjectHQ.ipa -t ios -u "$APPLE_ID" -p "$APP_PASSWORD"
+          xcrun altool --upload-app -f PhotoShape.ipa -t ios -u "$APPLE_ID" -p "$APP_PASSWORD"
