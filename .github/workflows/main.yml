@@ -16,6 +16,9 @@ on:
     branches: [main]
     paths: [upload-trigger.txt]
 
+permissions:
+  contents: write
+
 jobs:
   upload:
     runs-on: macos-latest
@@ -24,7 +27,7 @@ jobs:
     steps:
       - name: Download IPA
         env:
-          IPA_URL: "https://uc17a54b461582ea1f3ef9532864.dl.dropboxusercontent.com/cd/0/get/DGsjtP3jIfzjFRj0Iv1tYVUV8v4Q4n88sUWOWsJMNGkVRiE00BIVCum-M6jyEj7Dd_il0nm2TT7EIJAly-FtSIwyOa4zIru3LjUVIL1mJbxiwLP7-YmCJdKDEef0vJ-ppmDtOmkufn5x9mPoIlUrLxFxvqyZNnzG7KoWzrztFggD5A/file?c_luid=878c00f9"
+          IPA_URL: "https://uc69f81a5f44c74fae97ecca59db.dl.dropboxusercontent.com/cd/0/get/DGv8vgc88kRSyOCFdqsir87vY2torWqRCoYfiEdb5bsOI6ni8Yw6PCOcB4nEGQ1pZDyM4nB7QtGt9Z29T8PAIYm9uz47dGB6TVy-3onwwcNqEkEVb03AfOu94KyHbm266cxxyT46E9JvIdtbYt3aUXt1nk6u5xPpSnasPjTN3fIkeg/file?c_luid=878c00f9"
           IPA_NAME: "SpotCast-build-3"
         run: |
           set -euo pipefail
@@ -34,10 +37,40 @@ jobs:
           echo "IPA archive is valid: $(du -h "$IPA_NAME.ipa" | cut -f1)"
 
       - name: Upload to App Store Connect
+        id: upload
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
           IPA_NAME: "SpotCast-build-3"
         run: |
-          set -euo pipefail
-          xcrun altool --upload-app -f "$IPA_NAME.ipa" -t ios -u "$APPLE_ID" -p "$APP_PASSWORD"
+          set +e
+          xcrun altool --upload-app -f "$IPA_NAME.ipa" -t ios -u "$APPLE_ID" -p "$APP_PASSWORD" 2>&1 | tee upload.log
+          STATUS=${PIPESTATUS[0]}
+          if [ "$STATUS" -eq 0 ]; then
+            echo "result=uploaded" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if grep -Eqi 'already.*uploaded|bundle version.*must be higher|has already been used' upload.log; then
+            echo "result=already_uploaded" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "result=failed" >> "$GITHUB_OUTPUT"
+          exit "$STATUS"
+
+      - name: Write result
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ steps.upload.outputs.result }}
+        run: |
+          RESULT="${RESULT:-failed}"
+          printf 'SpotCast App Store upload result: %s\nUTC: %s\n' "$RESULT" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > upload-result.txt
+          CONTENT=$(base64 < upload-result.txt | tr -d '\n')
+          API="https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/upload-result.txt"
+          SHA=$(curl -sS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$API" | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d.get("sha",""))')
+          if [ -n "$SHA" ]; then
+            DATA=$(python3 -c 'import json,os; print(json.dumps({"message":"Update SpotCast upload result","content":os.environ["CONTENT"],"sha":os.environ["SHA"]}))' CONTENT="$CONTENT" SHA="$SHA")
+          else
+            DATA=$(python3 -c 'import json,os; print(json.dumps({"message":"Create SpotCast upload result","content":os.environ["CONTENT"]}))' CONTENT="$CONTENT")
+          fi
+          curl --fail -X PUT -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$API" -d "$DATA"
