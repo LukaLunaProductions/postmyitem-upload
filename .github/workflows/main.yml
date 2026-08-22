@@ -1,15 +1,17 @@
-name: Upload SpotCast IPA to App Store Connect
+name: Upload IPA to App Store Connect
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - upload-trigger.txt
-
-permissions:
-  contents: write
+    inputs:
+      ipa_url:
+        description: "Temporary direct-download URL for the IPA"
+        required: true
+        type: string
+      ipa_name:
+        description: "App label used for the local IPA filename"
+        required: false
+        default: "App"
+        type: string
 
 jobs:
   upload:
@@ -17,51 +19,22 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Download SpotCast IPA
+      - name: Download IPA
+        env:
+          IPA_URL: ${{ inputs.ipa_url }}
+          IPA_NAME: ${{ inputs.ipa_name }}
         run: |
           set -euo pipefail
-          curl --fail --location --retry 3 --retry-delay 2 "https://uc25d45d394cca077445c5ec5bc6.dl.dropboxusercontent.com/cd/0/get/DGutX2OA-cX7DF4wAmAhRFb-gUQdL0W0hiFdsz2vJCm41LvmUbSYhFZwRUbpNtSzwBXWprXbfeiEyx7RSm1YQWTqz60LhXB7RMEAdRDNyKbdtFMci-0DqGpRdVZ0FYn9GexwfImRS-GYUKZcaeIGGlQnAuEWH9-ra0amCQNj9C_zKg/file?c_luid=878c00f9" --output SpotCast.ipa
-          test -s SpotCast.ipa
-          unzip -t SpotCast.ipa >/dev/null
-          echo "IPA archive is valid: $(du -h SpotCast.ipa | cut -f1)"
+          curl --fail --location --retry 3 --retry-delay 2 "$IPA_URL" --output "$IPA_NAME.ipa"
+          test -s "$IPA_NAME.ipa"
+          unzip -t "$IPA_NAME.ipa" >/dev/null
+          echo "IPA archive is valid: $(du -h "$IPA_NAME.ipa" | cut -f1)"
 
       - name: Upload to App Store Connect
-        id: upload
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+          IPA_NAME: ${{ inputs.ipa_name }}
         run: |
-          set +e
-          xcrun altool --upload-app -f SpotCast.ipa -t ios -u "$APPLE_ID" -p "$APP_PASSWORD" > upload.log 2>&1
-          code=$?
-          cat upload.log
-          if [ $code -eq 0 ]; then
-            echo "RESULT=uploaded" >> "$GITHUB_ENV"
-            exit 0
-          fi
-          if grep -Eqi 'redundant binary upload|bundle version.*already|CFBundleVersion.*used|already been uploaded|already exists' upload.log; then
-            echo "RESULT=already_uploaded" >> "$GITHUB_ENV"
-            exit 0
-          fi
-          echo "RESULT=failed" >> "$GITHUB_ENV"
-          cp upload.log upload-failure.log
-          exit 0
-
-      - name: Write upload result
-        run: |
-          printf '%s\n' "SpotCast App Store upload result: ${RESULT}" "UTC: $(date -u +'%Y-%m-%dT%H:%M:%SZ')" > upload-result.txt
-          if [ -f upload-failure.log ]; then
-            echo "---" >> upload-result.txt
-            tail -40 upload-failure.log >> upload-result.txt
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add upload-result.txt
-          git commit -m "Record SpotCast App Store upload result" || true
-          git push
-
-      - name: Fail on unknown upload error
-        if: env.RESULT == 'failed'
-        run: exit 1
+          set -euo pipefail
+          xcrun altool --upload-app -f "$IPA_NAME.ipa" -t ios -u "$APPLE_ID" -p "$APP_PASSWORD"
