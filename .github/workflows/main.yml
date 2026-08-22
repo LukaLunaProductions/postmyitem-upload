@@ -12,6 +12,9 @@ on:
         required: false
         default: "App"
         type: string
+  push:
+    branches: [main]
+    paths: [upload-trigger.txt]
 
 jobs:
   upload:
@@ -21,8 +24,8 @@ jobs:
     steps:
       - name: Download IPA
         env:
-          IPA_URL: ${{ inputs.ipa_url }}
-          IPA_NAME: ${{ inputs.ipa_name }}
+          IPA_URL: "https://uc17a54b461582ea1f3ef9532864.dl.dropboxusercontent.com/cd/0/get/DGsjtP3jIfzjFRj0Iv1tYVUV8v4Q4n88sUWOWsJMNGkVRiE00BIVCum-M6jyEj7Dd_il0nm2TT7EIJAly-FtSIwyOa4zIru3LjUVIL1mJbxiwLP7-YmCJdKDEef0vJ-ppmDtOmkufn5x9mPoIlUrLxFxvqyZNnzG7KoWzrztFggD5A/file?c_luid=878c00f9"
+          IPA_NAME: "SpotCast-build-3"
         run: |
           set -euo pipefail
           curl --fail --location --retry 3 --retry-delay 2 "$IPA_URL" --output "$IPA_NAME.ipa"
@@ -34,7 +37,7 @@ jobs:
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
-          IPA_NAME: ${{ inputs.ipa_name }}
+          IPA_NAME: "SpotCast-build-3"
         run: |
           set -euo pipefail
           xcrun altool --upload-app -f "$IPA_NAME.ipa" -t ios -u "$APPLE_ID" -p "$APP_PASSWORD"
