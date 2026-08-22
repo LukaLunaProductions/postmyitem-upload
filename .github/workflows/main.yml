@@ -8,30 +8,60 @@ on:
     paths:
       - upload-trigger.txt
 
+permissions:
+  contents: write
+
 jobs:
   upload:
     runs-on: macos-latest
     timeout-minutes: 30
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Download SpotCast IPA
         run: |
           set -euo pipefail
-          curl --fail --location --retry 3 --retry-delay 2 "https://uc8c2f6276db1181418f24b42192.dl.dropboxusercontent.com/cd/0/get/DGt6LpPySugESmcCRS-0qwHVbsLVEBD4caKwLIjJ9-d0zMejs8Y77-QovJvxUo6MACNmZIuZZ-S9QpF6_w3n4Jm9mkBx-BadoTIATBKwMxzTGOtwWSfQtffzJzDoGQJavnZeNBBkeNhALqGUcihsg0DZUnaDs0GGCUtmjfZI_Ub_bQ/file?c_luid=878c00f9" --output SpotCast.ipa
+          curl --fail --location --retry 3 --retry-delay 2 "https://uc25d45d394cca077445c5ec5bc6.dl.dropboxusercontent.com/cd/0/get/DGutX2OA-cX7DF4wAmAhRFb-gUQdL0W0hiFdsz2vJCm41LvmUbSYhFZwRUbpNtSzwBXWprXbfeiEyx7RSm1YQWTqz60LhXB7RMEAdRDNyKbdtFMci-0DqGpRdVZ0FYn9GexwfImRS-GYUKZcaeIGGlQnAuEWH9-ra0amCQNj9C_zKg/file?c_luid=878c00f9" --output SpotCast.ipa
           test -s SpotCast.ipa
-          file SpotCast.ipa
-          echo "IPA size: $(du -h SpotCast.ipa | cut -f1)"
-
-      - name: Validate IPA archive
-        run: |
-          set -euo pipefail
           unzip -t SpotCast.ipa >/dev/null
-          echo "IPA archive is valid."
+          echo "IPA archive is valid: $(du -h SpotCast.ipa | cut -f1)"
 
       - name: Upload to App Store Connect
+        id: upload
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
         run: |
-          set -euo pipefail
-          xcrun altool --upload-app -f SpotCast.ipa -t ios -u "$APPLE_ID" -p "$APP_PASSWORD"
+          set +e
+          xcrun altool --upload-app -f SpotCast.ipa -t ios -u "$APPLE_ID" -p "$APP_PASSWORD" > upload.log 2>&1
+          code=$?
+          cat upload.log
+          if [ $code -eq 0 ]; then
+            echo "RESULT=uploaded" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          if grep -Eqi 'redundant binary upload|bundle version.*already|CFBundleVersion.*used|already been uploaded|already exists' upload.log; then
+            echo "RESULT=already_uploaded" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          echo "RESULT=failed" >> "$GITHUB_ENV"
+          cp upload.log upload-failure.log
+          exit 0
+
+      - name: Write upload result
+        run: |
+          printf '%s\n' "SpotCast App Store upload result: ${RESULT}" "UTC: $(date -u +'%Y-%m-%dT%H:%M:%SZ')" > upload-result.txt
+          if [ -f upload-failure.log ]; then
+            echo "---" >> upload-result.txt
+            tail -40 upload-failure.log >> upload-result.txt
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add upload-result.txt
+          git commit -m "Record SpotCast App Store upload result" || true
+          git push
+
+      - name: Fail on unknown upload error
+        if: env.RESULT == 'failed'
+        run: exit 1
