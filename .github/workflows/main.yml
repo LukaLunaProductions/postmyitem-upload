@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Download Bingo Bonanza IPA
         env:
-          IPA_URL: "https://www.dropbox.com/scl/fi/nyqhculjjrmr56fxa27by/bingobonanza.ipa?rlkey=2ktalzqbzcrj20l11bid7v08j&dl=1"
+          IPA_URL: "https://uc026a39eae5faa77ec26ef5bbe1.dl.dropboxusercontent.com/cd/0/get/DGzvMEbhYssc0szUGuqdIyl-Y2YavoY0VZhvMjNDAXabWPEP5enyoOTplZxgxtuW3rtFLL24aRUsO7IKQiSsIw5iiiTORuhAwqjl3YBYSVUgD3AckVHf5HodLryJo8yh-oOYDF2yjmeKQAxSAQCLhCpzzUlyWFulwEO-8GGCZyTR8g/file?c_luid=878c00f9"
         run: |
           set -euo pipefail
           curl --fail --location --retry 3 --retry-delay 2 "$IPA_URL" --output "BingoBonanza.ipa"
@@ -34,4 +34,4 @@ jobs:
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
         run: |
           set -euo pipefail
-          xcrun altool --upload-app -f "BingoBonanza.ipa" -t ios -u "$APPLE_ID" -p "$APP_PASSWORD"
+          xcrun altool --upload-app --type ios --file "BingoBonanza.ipa" --username "$APPLE_ID" --password "$APP_PASSWORD"
