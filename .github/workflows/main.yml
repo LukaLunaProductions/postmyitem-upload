@@ -5,12 +5,12 @@ on:
     inputs:
       ipa_url:
         description: "Temporary direct-download URL for the IPA"
-        required: true
+        required: false
         type: string
       ipa_name:
         description: "App label used for the local IPA filename"
         required: false
-        default: "App"
+        default: "PhotoShape"
         type: string
   push:
     branches: [main]
@@ -23,12 +23,11 @@ jobs:
   upload:
     runs-on: macos-latest
     timeout-minutes: 30
-
     steps:
       - name: Download IPA
         env:
-          IPA_URL: "https://ucae65cba52e744c24b2d80599d3.dl.dropboxusercontent.com/cd/0/get/DGyfZighJD8NKETp8Oyacbdxcq9hTZVIJUunanIXAgEeEixcGqUmqWvBFQ1Qm1abyKlYdg8CzLtWqzD659PT80g8LsbjcZj5fBlJYTwyoCs16wyhWoavlrbvH9Eeo8SILp0X94rmKXX0xF1aud7jZZhGDk9GX5JbxYz8265xHzW8gQ/file?c_luid=878c00f9"
-          IPA_NAME: "SpotCast-final"
+          IPA_URL: "https://uc4df3d037a38d8cab5dae0a6258.dl.dropboxusercontent.com/cd/0/get/DGxwJ104dp6cfCY4gubvSolx3B03ZBtMDlPM8SaEgy0ZcOmvzlvPXKYllABVOTb5IgQrgWjVvaWwKlE01SaCJL_FdtRcXC_p99ejvXGrairFUqq2kDmIuDcHNzUcgmFA8zQHOrEwJLWva64v13UhIaEKrfcha_CSbkmiRjsGwkwKLg/file?c_luid=878c00f9"
+          IPA_NAME: "PhotoShape-build-2"
         run: |
           set -euo pipefail
           curl --fail --location --retry 3 --retry-delay 2 "$IPA_URL" --output "$IPA_NAME.ipa"
@@ -41,7 +40,7 @@ jobs:
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
-          IPA_NAME: "SpotCast-final"
+          IPA_NAME: "PhotoShape-build-2"
         run: |
           set +e
           xcrun altool --upload-app -f "$IPA_NAME.ipa" -t ios -u "$APPLE_ID" -p "$APP_PASSWORD" 2>&1 | tee upload.log
@@ -64,13 +63,13 @@ jobs:
           RESULT: ${{ steps.upload.outputs.result }}
         run: |
           RESULT="${RESULT:-failed}"
-          printf 'SpotCast App Store upload result: %s\nUTC: %s\n' "$RESULT" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > upload-result.txt
+          printf 'PhotoShape App Store upload result: %s\nUTC: %s\n' "$RESULT" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > upload-result.txt
           CONTENT=$(base64 < upload-result.txt | tr -d '\n')
           API="https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/upload-result.txt"
           SHA=$(curl -sS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$API" | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d.get("sha",""))')
           if [ -n "$SHA" ]; then
-            DATA=$(python3 -c 'import json,os; print(json.dumps({"message":"Update SpotCast upload result","content":os.environ["CONTENT"],"sha":os.environ["SHA"]}))' CONTENT="$CONTENT" SHA="$SHA")
+            DATA=$(python3 -c 'import json,os; print(json.dumps({"message":"Update PhotoShape upload result","content":os.environ["CONTENT"],"sha":os.environ["SHA"]}))' CONTENT="$CONTENT" SHA="$SHA")
           else
-            DATA=$(python3 -c 'import json,os; print(json.dumps({"message":"Create SpotCast upload result","content":os.environ["CONTENT"]}))' CONTENT="$CONTENT")
+            DATA=$(python3 -c 'import json,os; print(json.dumps({"message":"Create PhotoShape upload result","content":os.environ["CONTENT"]}))' CONTENT="$CONTENT")
           fi
           curl --fail -X PUT -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$API" -d "$DATA"
