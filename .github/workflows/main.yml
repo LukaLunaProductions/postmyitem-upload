@@ -1,75 +1,37 @@
-name: Upload IPA to App Store Connect
+name: Upload Bingo Bonanza IPA to App Store Connect
 
 on:
   workflow_dispatch:
-    inputs:
-      ipa_url:
-        description: "Temporary direct-download URL for the IPA"
-        required: false
-        type: string
-      ipa_name:
-        description: "App label used for the local IPA filename"
-        required: false
-        default: "PhotoShape"
-        type: string
-  push:
-    branches: [main]
-    paths: [upload-trigger.txt]
-
-permissions:
-  contents: write
 
 jobs:
   upload:
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
-      - name: Download IPA
+      - name: Download Bingo Bonanza IPA
         env:
-          IPA_URL: "https://uc4df3d037a38d8cab5dae0a6258.dl.dropboxusercontent.com/cd/0/get/DGxwJ104dp6cfCY4gubvSolx3B03ZBtMDlPM8SaEgy0ZcOmvzlvPXKYllABVOTb5IgQrgWjVvaWwKlE01SaCJL_FdtRcXC_p99ejvXGrairFUqq2kDmIuDcHNzUcgmFA8zQHOrEwJLWva64v13UhIaEKrfcha_CSbkmiRjsGwkwKLg/file?c_luid=878c00f9"
-          IPA_NAME: "PhotoShape-build-2"
+          IPA_URL: "https://www.dropbox.com/scl/fi/nyqhculjjrmr56fxa27by/bingobonanza.ipa?rlkey=2ktalzqbzcrj20l11bid7v08j&dl=1"
         run: |
           set -euo pipefail
-          curl --fail --location --retry 3 --retry-delay 2 "$IPA_URL" --output "$IPA_NAME.ipa"
-          test -s "$IPA_NAME.ipa"
-          unzip -t "$IPA_NAME.ipa" >/dev/null
-          echo "IPA archive is valid: $(du -h "$IPA_NAME.ipa" | cut -f1)"
+          curl --fail --location --retry 3 --retry-delay 2 "$IPA_URL" --output "BingoBonanza.ipa"
+          test -s "BingoBonanza.ipa"
+          unzip -t "BingoBonanza.ipa" >/dev/null
+          echo "IPA archive is valid: $(du -h "BingoBonanza.ipa" | cut -f1)"
+
+      - name: Inspect build metadata
+        run: |
+          set -euo pipefail
+          unzip -q "BingoBonanza.ipa" -d extracted
+          APP_PATH=$(find extracted/Payload -maxdepth 1 -name '*.app' -type d | head -1)
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP_PATH/Info.plist"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP_PATH/Info.plist"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP_PATH/Info.plist"
+          /usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP_PATH/Info.plist" || true
 
       - name: Upload to App Store Connect
-        id: upload
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
-          IPA_NAME: "PhotoShape-build-2"
         run: |
-          set +e
-          xcrun altool --upload-app -f "$IPA_NAME.ipa" -t ios -u "$APPLE_ID" -p "$APP_PASSWORD" 2>&1 | tee upload.log
-          STATUS=${PIPESTATUS[0]}
-          if [ "$STATUS" -eq 0 ]; then
-            echo "result=uploaded" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          if grep -Eqi 'already.*uploaded|bundle version.*must be higher|has already been used' upload.log; then
-            echo "result=already_uploaded" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          echo "result=failed" >> "$GITHUB_OUTPUT"
-          exit "$STATUS"
-
-      - name: Write result
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RESULT: ${{ steps.upload.outputs.result }}
-        run: |
-          RESULT="${RESULT:-failed}"
-          printf 'PhotoShape App Store upload result: %s\nUTC: %s\n' "$RESULT" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > upload-result.txt
-          CONTENT=$(base64 < upload-result.txt | tr -d '\n')
-          API="https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/upload-result.txt"
-          SHA=$(curl -sS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$API" | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d.get("sha",""))')
-          if [ -n "$SHA" ]; then
-            DATA=$(python3 -c 'import json,os; print(json.dumps({"message":"Update PhotoShape upload result","content":os.environ["CONTENT"],"sha":os.environ["SHA"]}))' CONTENT="$CONTENT" SHA="$SHA")
-          else
-            DATA=$(python3 -c 'import json,os; print(json.dumps({"message":"Create PhotoShape upload result","content":os.environ["CONTENT"]}))' CONTENT="$CONTENT")
-          fi
-          curl --fail -X PUT -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$API" -d "$DATA"
+          set -euo pipefail
+          xcrun altool --upload-app -f "BingoBonanza.ipa" -t ios -u "$APPLE_ID" -p "$APP_PASSWORD"
