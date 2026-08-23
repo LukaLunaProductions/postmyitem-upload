@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Download TAALSTAD IPA
         env:
-          IPA_URL: "https://www.dropbox.com/scl/fi/drbij271kzdtqvtrxyq1i/Taalstad.ipa?rlkey=ygf7cnkcty4ksyvxdo8mudt1f&dl=1"
+          IPA_URL: "https://dl.dropboxusercontent.com/scl/fi/drbij271kzdtqvtrxyq1i/Taalstad.ipa?rlkey=ygf7cnkcty4ksyvxdo8mudt1f"
         run: |
           set -euo pipefail
           curl --fail --location --retry 3 --retry-delay 2 "$IPA_URL" --output "Taalstad.ipa"
