@@ -27,8 +27,8 @@ jobs:
     steps:
       - name: Download IPA
         env:
-          IPA_URL: "https://uc69f81a5f44c74fae97ecca59db.dl.dropboxusercontent.com/cd/0/get/DGv8vgc88kRSyOCFdqsir87vY2torWqRCoYfiEdb5bsOI6ni8Yw6PCOcB4nEGQ1pZDyM4nB7QtGt9Z29T8PAIYm9uz47dGB6TVy-3onwwcNqEkEVb03AfOu94KyHbm266cxxyT46E9JvIdtbYt3aUXt1nk6u5xPpSnasPjTN3fIkeg/file?c_luid=878c00f9"
-          IPA_NAME: "SpotCast-build-3"
+          IPA_URL: "https://ucae65cba52e744c24b2d80599d3.dl.dropboxusercontent.com/cd/0/get/DGyfZighJD8NKETp8Oyacbdxcq9hTZVIJUunanIXAgEeEixcGqUmqWvBFQ1Qm1abyKlYdg8CzLtWqzD659PT80g8LsbjcZj5fBlJYTwyoCs16wyhWoavlrbvH9Eeo8SILp0X94rmKXX0xF1aud7jZZhGDk9GX5JbxYz8265xHzW8gQ/file?c_luid=878c00f9"
+          IPA_NAME: "SpotCast-final"
         run: |
           set -euo pipefail
           curl --fail --location --retry 3 --retry-delay 2 "$IPA_URL" --output "$IPA_NAME.ipa"
@@ -41,7 +41,7 @@ jobs:
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
-          IPA_NAME: "SpotCast-build-3"
+          IPA_NAME: "SpotCast-final"
         run: |
           set +e
           xcrun altool --upload-app -f "$IPA_NAME.ipa" -t ios -u "$APPLE_ID" -p "$APP_PASSWORD" 2>&1 | tee upload.log
