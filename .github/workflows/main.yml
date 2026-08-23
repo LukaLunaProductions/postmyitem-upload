@@ -1,33 +1,37 @@
-name: Upload Backstage IPA to App Store Connect
+name: Upload TAALSTAD IPA to App Store Connect
+
 on:
   workflow_dispatch:
+
 jobs:
   upload:
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
-      - name: Download Backstage IPA
+      - name: Download TAALSTAD IPA
         env:
-          IPA_URL: ${{ secrets.BACKSTAGE_IPA_URL }}
+          IPA_URL: "https://www.dropbox.com/scl/fi/drbij271kzdtqvtrxyq1i/Taalstad.ipa?rlkey=ygf7cnkcty4ksyvxdo8mudt1f&dl=1"
         run: |
           set -euo pipefail
-          curl --fail --location --retry 3 --retry-delay 2 "$IPA_URL" --output "Backstage.ipa"
-          test -s "Backstage.ipa"
-          unzip -t "Backstage.ipa" >/dev/null
-          echo "IPA archive is valid"
+          curl --fail --location --retry 3 --retry-delay 2 "$IPA_URL" --output "Taalstad.ipa"
+          test -s "Taalstad.ipa"
+          unzip -t "Taalstad.ipa" >/dev/null
+          echo "IPA archive is valid: $(du -h "Taalstad.ipa" | cut -f1)"
+
       - name: Inspect build metadata
         run: |
           set -euo pipefail
-          unzip -q "Backstage.ipa" -d extracted
+          unzip -q "Taalstad.ipa" -d extracted
           APP_PATH=$(find extracted/Payload -maxdepth 1 -name '*.app' -type d | head -1)
           /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP_PATH/Info.plist"
           /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP_PATH/Info.plist"
           /usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP_PATH/Info.plist"
           /usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP_PATH/Info.plist" || true
+
       - name: Upload to App Store Connect
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
         run: |
           set -euo pipefail
-          xcrun altool --upload-app --type ios --file "Backstage.ipa" --username "$APPLE_ID" --password "$APP_PASSWORD"
+          xcrun altool --upload-app --type ios --file "Taalstad.ipa" --username "$APPLE_ID" --password "$APP_PASSWORD"
