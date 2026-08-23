@@ -1,37 +1,33 @@
-name: Upload Bingo Bonanza IPA to App Store Connect
-
+name: Upload Backstage IPA to App Store Connect
 on:
   workflow_dispatch:
-
 jobs:
   upload:
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
-      - name: Download Bingo Bonanza IPA
+      - name: Download Backstage IPA
         env:
-          IPA_URL: "https://uc026a39eae5faa77ec26ef5bbe1.dl.dropboxusercontent.com/cd/0/get/DGzvMEbhYssc0szUGuqdIyl-Y2YavoY0VZhvMjNDAXabWPEP5enyoOTplZxgxtuW3rtFLL24aRUsO7IKQiSsIw5iiiTORuhAwqjl3YBYSVUgD3AckVHf5HodLryJo8yh-oOYDF2yjmeKQAxSAQCLhCpzzUlyWFulwEO-8GGCZyTR8g/file?c_luid=878c00f9"
+          IPA_URL: ${{ secrets.BACKSTAGE_IPA_URL }}
         run: |
           set -euo pipefail
-          curl --fail --location --retry 3 --retry-delay 2 "$IPA_URL" --output "BingoBonanza.ipa"
-          test -s "BingoBonanza.ipa"
-          unzip -t "BingoBonanza.ipa" >/dev/null
-          echo "IPA archive is valid: $(du -h "BingoBonanza.ipa" | cut -f1)"
-
+          curl --fail --location --retry 3 --retry-delay 2 "$IPA_URL" --output "Backstage.ipa"
+          test -s "Backstage.ipa"
+          unzip -t "Backstage.ipa" >/dev/null
+          echo "IPA archive is valid"
       - name: Inspect build metadata
         run: |
           set -euo pipefail
-          unzip -q "BingoBonanza.ipa" -d extracted
+          unzip -q "Backstage.ipa" -d extracted
           APP_PATH=$(find extracted/Payload -maxdepth 1 -name '*.app' -type d | head -1)
           /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP_PATH/Info.plist"
           /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP_PATH/Info.plist"
           /usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP_PATH/Info.plist"
           /usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP_PATH/Info.plist" || true
-
       - name: Upload to App Store Connect
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
         run: |
           set -euo pipefail
-          xcrun altool --upload-app --type ios --file "BingoBonanza.ipa" --username "$APPLE_ID" --password "$APP_PASSWORD"
+          xcrun altool --upload-app --type ios --file "Backstage.ipa" --username "$APPLE_ID" --password "$APP_PASSWORD"
